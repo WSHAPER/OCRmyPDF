@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 WSHAPER
 # SPDX-FileCopyrightText: 2023 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
@@ -106,6 +107,9 @@ class PageResult(NamedTuple):
 
     text: Path | None = None
     """Single page text file."""
+
+    deskew_transform: Path | None = None
+    """Single page deskew transform JSON file."""
 
     orientation_correction: int = 0
     """Orientation correction in degrees."""

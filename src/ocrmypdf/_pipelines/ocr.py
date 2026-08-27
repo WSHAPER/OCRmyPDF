@@ -1,4 +1,7 @@
+# SPDX-FileCopyrightText: 2026 WSHAPER
 # SPDX-FileCopyrightText: 2019-2023 James R. Barlow
+
+# SPDX-FileCopyrightText: 2026 WSHAPER
 # SPDX-FileCopyrightText: 2019 Martin Wind
 # SPDX-License-Identifier: MPL-2.0
 
@@ -22,6 +25,7 @@ from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipeline import (
     copy_final,
     is_ocr_required,
+    merge_deskew_transforms,
     merge_sidecars,
     ocr_engine_direct,
     ocr_engine_hocr,
@@ -88,11 +92,18 @@ def _exec_page_sync(page_context: PageContext) -> PageResult:
         page_context
     )
     ocr_out, text_out, ocr_tree = _image_to_ocr_text(page_context, ocr_image_out)
+    transform_file = page_context.get_path('pp_deskew.json')
     return PageResult(
         pageno=page_context.pageno,
         pdf_page_from_image=pdf_page_from_image_out,
         ocr=ocr_out,
         text=text_out,
+        deskew_transform=(
+            transform_file
+            if page_context.options.deskew_transform is not None
+            and transform_file.exists()
+            else None
+        ),
         orientation_correction=orientation_correction,
         ocr_tree=ocr_tree,
     )
@@ -107,6 +118,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
         log.info("Starting processing with %d workers concurrently", max_workers)
 
     sidecars: list[Path | None] = [None] * len(context.pdfinfo)
+    deskew_transforms: list[Path | None] = [None] * len(context.pdfinfo)
     ocrgraft = OcrGrafter(context)
 
     def update_page(result: PageResult, pbar: ProgressBar):
@@ -114,6 +126,7 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
         try:
             set_thread_pageno(result.pageno + 1)
             sidecars[result.pageno] = result.text
+            deskew_transforms[result.pageno] = result.deskew_transform
             pbar.update(0.5)
             ocrgraft.graft_page(
                 pageno=result.pageno,
@@ -146,6 +159,12 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
         text = merge_sidecars(sidecars, context)
         # Copy text file to destination
         copy_final(text, options.sidecar)
+
+    # Output deskew transform sidecar
+    if options.deskew_transform:
+        transform = merge_deskew_transforms(deskew_transforms, context)
+        # Copy JSON file to destination
+        copy_final(transform, options.deskew_transform)
 
     # Merge layers to one single pdf
     pdf = ocrgraft.finalize()

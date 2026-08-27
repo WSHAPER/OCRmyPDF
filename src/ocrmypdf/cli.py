@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 WSHAPER
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
@@ -279,6 +280,17 @@ Online documentation is located at:
         '--deskew',
         action='store_true',
         help="Deskew each page before performing OCR",
+    )
+    preprocessing.add_argument(
+        '--deskew-transform',
+        nargs='?',
+        const='\0',
+        default=None,
+        metavar='FILE',
+        help="Write the deskew parameters for each page to a JSON sidecar file, "
+        "so the deskew can be inverted and OCR coordinates mapped back to the "
+        "original page. Requires --deskew. "
+        "If FILE is omitted, the sidecar file will be named {output_file}.deskew.json.",
     )
     preprocessing.add_argument(
         '-c',

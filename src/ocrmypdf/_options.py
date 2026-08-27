@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 WSHAPER
 # SPDX-FileCopyrightText: 2024 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
@@ -150,6 +151,7 @@ class OcrOptions(BaseModel):
     input_file: PathOrIO
     output_file: PathOrIO
     sidecar: PathOrIO | None = None
+    deskew_transform: PathOrIO | None = None
     output_folder: Path | None = None
     work_folder: Path | None = None
 

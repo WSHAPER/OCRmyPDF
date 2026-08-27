@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 WSHAPER
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
@@ -560,6 +561,7 @@ def ocr(
     rotate_pages: bool | None = None,
     remove_background: bool | None = None,
     deskew: bool | None = None,
+    deskew_transform: PathOrIO | None = None,
     clean: bool | None = None,
     clean_final: bool | None = None,
     unpaper_args: str | None = None,
@@ -624,6 +626,7 @@ def ocr(  # noqa: D417
     rotate_pages: bool | None = None,
     remove_background: bool | None = None,
     deskew: bool | None = None,
+    deskew_transform: PathOrIO | None = None,
     clean: bool | None = None,
     clean_final: bool | None = None,
     unpaper_args: str | None = None,
@@ -868,6 +871,7 @@ def _pdf_to_hocr(  # noqa: D417
     rotate_pages: bool | None = None,
     remove_background: bool | None = None,
     deskew: bool | None = None,
+    deskew_transform: PathOrIO | None = None,
     clean: bool | None = None,
     clean_final: bool | None = None,
     unpaper_args: str | None = None,

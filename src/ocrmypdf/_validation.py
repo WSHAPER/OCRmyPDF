@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2026 WSHAPER
 # SPDX-FileCopyrightText: 2022 James R. Barlow
 # SPDX-License-Identifier: MPL-2.0
 
@@ -109,6 +111,34 @@ def check_options_sidecar(options: OcrOptions) -> None:
         )
 
 
+def check_options_deskew_transform(options: OcrOptions) -> None:
+    if options.deskew_transform == '\0':
+        if options.output_file == '-':
+            raise BadArgsError(
+                "--deskew-transform filename needed when output file is stdout."
+            )
+        elif options.output_file == os.devnull:
+            raise BadArgsError(
+                "--deskew-transform filename needed when output file is "
+                "/dev/null or NUL."
+            )
+        elif not isinstance(options.output_file, str | Path):
+            # The '\0' sentinel is only ever set by the CLI, which always
+            # supplies output_file as a plain path - not a stream. If this
+            # somehow fires, the caller mixed a CLI-only sentinel with the
+            # stream-based API.
+            raise BadArgsError(
+                "--deskew-transform filename needed when output file is not a path."
+            )
+        options.deskew_transform = os.fspath(options.output_file) + '.deskew.json'
+    if options.deskew_transform not in (None, '\0') and not options.deskew:
+        raise BadArgsError("--deskew is required for --deskew-transform")
+    if options.deskew_transform in (options.input_file, options.output_file):
+        raise BadArgsError(
+            "--deskew-transform file must be different from the input and output files"
+        )
+
+
 def check_options_preprocessing(options: OcrOptions) -> None:
     if options.clean_final:
         options.clean = True
@@ -139,6 +169,7 @@ def check_options_strip(options: OcrOptions) -> None:
         return
     incompatible = {
         '--deskew': options.deskew,
+        '--deskew-transform': options.deskew_transform,
         '--clean': options.clean,
         '--clean-final': options.clean_final,
         '--remove-background': options.remove_background,
@@ -160,6 +191,7 @@ def _check_plugin_invariant_options(options: OcrOptions) -> None:
     check_platform()
     check_options_strip(options)
     check_options_sidecar(options)
+    check_options_deskew_transform(options)
     check_options_preprocessing(options)
 
 

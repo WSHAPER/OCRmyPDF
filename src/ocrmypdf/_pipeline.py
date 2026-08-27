@@ -1,4 +1,7 @@
+# SPDX-FileCopyrightText: 2026 WSHAPER
 # SPDX-FileCopyrightText: 2018-2022 James R. Barlow
+
+# SPDX-FileCopyrightText: 2026 WSHAPER
 # SPDX-FileCopyrightText: 2019 Martin Wind
 # SPDX-License-Identifier: MPL-2.0
 
@@ -6,6 +9,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -659,6 +663,27 @@ def preprocess_deskew(input_file: Path, page_context: PageContext) -> Path:
             fillcolor=ImageColor.getcolor('white', mode=im.mode),  # type: ignore
         )
         deskewed.save(output_file, dpi=dpi)
+
+    if page_context.options.deskew_transform is not None:
+        # Record the transform parameters so the deskew can be inverted and
+        # OCR coordinates mapped back to the original page.
+        transform = {
+            'page': page_context.pageno + 1,
+            'angle_deg': deskew_angle_degrees,
+            # Pillow rotates counterclockwise about the image center, without
+            # enlarging the canvas; the corners that fall outside the rotated
+            # frame are cropped and the remainder is filled white.
+            'image_size': list(im.size),
+            'center': [im.size[0] / 2, im.size[1] / 2],
+            'expand': False,
+            'resample': 'bicubic',
+            'fill': 'white',
+            'dpi': [dpi.x, dpi.y],
+        }
+        transform_file = page_context.get_path('pp_deskew.json')
+        with transform_file.open('w', encoding='utf-8') as stream:
+            json.dump(transform, stream)
+            stream.write('\n')
 
     return output_file
 
@@ -1324,6 +1349,29 @@ def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext) -> Pat
             else:
                 pages = f"{from_}-{to_}" if from_ != to_ else f"{from_}"
                 stream.write(f'[OCR skipped on page(s) {pages}]')
+    return output_file
+
+
+def merge_deskew_transforms(
+    transform_files: Iterable[Path | None], context: PdfContext
+) -> Path:
+    """Merge the per-page deskew transform files into a single JSON file.
+
+    Deskew transform files are created by :func:`preprocess_deskew` when
+    ``--deskew-transform`` is set and record the parameters that were applied
+    to each page. Pages that were not deskewed are listed with a zero angle.
+    """
+    output_file = context.get_path('deskew_transform.json')
+    pages = []
+    for pageno, transform_file in enumerate(transform_files):
+        if transform_file is not None:
+            with transform_file.open(encoding='utf-8') as stream:
+                pages.append(json.load(stream))
+        else:
+            pages.append({'page': pageno + 1, 'angle_deg': 0.0})
+    with output_file.open('w', encoding='utf-8') as stream:
+        json.dump({'version': 1, 'pages': pages}, stream, indent=2)
+        stream.write('\n')
     return output_file
 
 

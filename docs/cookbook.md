@@ -186,6 +186,10 @@ might remove desirable content, especially from poor quality scans.
     photos as it may remove them.
 -   `--deskew` will correct pages that were scanned at a skewed angle by
     rotating them back into place.
+-   `--deskew-transform` records the deskew parameters for each page in a
+    JSON sidecar file, so the deskew can be inverted and OCR coordinates
+    mapped back to the original page. Requires `--deskew`. When the file
+    name is omitted, the sidecar will be named `{output_file}.deskew.json`.
 -   `--clean` uses [unpaper](https://www.flameeyes.eu/projects/unpaper)
     to clean up pages before OCR, but does not alter the final output.
     This makes it less likely that OCR will try to find text in
@@ -212,6 +216,39 @@ Deskew:
 ```bash
 ocrmypdf --deskew input.pdf output.pdf
 ```
+
+When you need to map OCR coordinates back to the original, unrotated page,
+ask for the deskew parameters as JSON:
+
+```bash
+ocrmypdf --deskew --deskew-transform input.pdf output.pdf
+```
+
+This writes `output.pdf.deskew.json` with one entry per page:
+
+```json
+{
+  "version": 1,
+  "pages": [
+    {
+      "page": 1,
+      "angle_deg": 1.4,
+      "image_size": [2550, 3300],
+      "center": [1275.0, 1650.0],
+      "expand": false,
+      "resample": "bicubic",
+      "fill": "white",
+      "dpi": [300.0, 300.0]
+    }
+  ]
+}
+```
+
+The page was rotated by `angle_deg` degrees counterclockwise about `center`
+(Pillow semantics, canvas not enlarged, corners cropped and filled white).
+To map a point from the deskewed image back to the original page, rotate it
+by `-angle_deg` about `center`. Pages that were not deskewed are listed with
+`angle_deg` `0.0`.
 
 Image processing commands can be combined. The order in which options
 are given does not matter. OCRmyPDF always applies the steps of the

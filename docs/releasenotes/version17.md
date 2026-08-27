@@ -7,6 +7,10 @@
 
 **Enhancements**
 
+- Added `--deskew-transform [FILE]` to write the deskew parameters for each
+  page to a JSON sidecar file (default: `{output_file}.deskew.json`), so the
+  deskew applied by `--deskew` can be inverted and OCR coordinates mapped
+  back to the original page. Requires `--deskew`.
 - `watcher.py` (the `watcher` extra) gained a configurable output layout and
   conflict policy. These are watcher-only changes; they do not affect the
   `ocrmypdf` library API.
